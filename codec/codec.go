@@ -35,7 +35,7 @@ func EncodeFile(file string, w io.Writer) error {
 func DecodeFile(file string, w io.Writer) error {
 	f, err := os.Open(file)
 	if err != nil {
-		fmt.Errorf("failed to open file: %v", err)
+		return fmt.Errorf("failed to open file: %v", err)
 	}
 	return Decode(bufio.NewReader(f), w)
 }
@@ -81,7 +81,7 @@ Loop:
 func Decode(r io.Reader, w io.Writer) error {
 	img, err := png.Decode(r)
 	if err != nil {
-		fmt.Errorf("failed to decode png: %v", err)
+		return fmt.Errorf("failed to decode png: %v", err)
 	}
 
 	var nb []uint8

@@ -26,7 +26,7 @@ func TestCodec(t *testing.T) {
 			t.Errorf("test case %d: expected no error while decoding, got: %v", i, err)
 		}
 		if bytes.Compare(c, out.Bytes()) != 0 {
-			t.Errorf("test case %d: expected %v, got: %v", i, c, out.Bytes)
+			t.Errorf("test case %d: expected %v, got: %v", i, c, out.Bytes())
 		}
 	}
 }
