@@ -1,0 +1,21 @@
+sudo: required
+
+language: go
+
+services:
+  - docker
+
+go:
+  - 1.8.x
+
+install:
+  - go get github.com/go-playground/overalls
+  - go get github.com/mattn/goveralls
+
+script:
+  - make test
+  - make
+
+after_script:
+ - overalls -project=github.com/$TRAVIS_REPO_SLUG -covermode=count -debug -ignore=vendor,.git
+ - goveralls -coverprofile=overalls.coverprofile -service=travis-ci -repotoken $COVERALLS_TOKEN
