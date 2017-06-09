@@ -118,6 +118,5 @@ func Decode(r io.Reader, w io.Writer) error {
 			}
 		}
 	}
-	fmt.Println("length: ", n)
 	return errors.New("failed to read all image data")
 }
