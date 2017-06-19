@@ -46,7 +46,7 @@ func Encode(r io.Reader, size uint64, w io.Writer) error {
 	binary.LittleEndian.PutUint64(lenBytes, size)
 	r = io.MultiReader(bytes.NewReader(lenBytes), r)
 
-	width, height := fileckrmath.Squarest(int(math.Ceil(float64(size+8) / 4)))
+	width, height := fileckrmath.NiceSquarest(int(math.Ceil(float64(size+8) / 4)))
 	img := image.NewNRGBA(image.Rect(0, 0, width, height))
 	b := make([]byte, 4)
 	z := []byte{0, 0, 0, 0}

@@ -60,3 +60,16 @@ func Squarest(n int) (int, int) {
 	c := candidates[len(candidates)-1]
 	return c, n / c
 }
+
+// NiceSquarest finds the two closest numbers that multiply
+// to n and differ by less than one order of magnutude.
+func NiceSquarest(n int) (int, int) {
+	if n <= 0 {
+		return 0, 0
+	}
+	var a, b int
+	for a, b = Squarest(n); b/a > 10 || a < 20; n++ {
+		a, b = Squarest(n)
+	}
+	return a, b
+}
