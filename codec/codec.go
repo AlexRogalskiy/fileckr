@@ -49,7 +49,7 @@ func Encode(r io.Reader, size uint64, w io.Writer) error {
 	width, height := fileckrmath.NiceSquarest(int(math.Ceil(float64(size+8) / 4)))
 	img := image.NewNRGBA(image.Rect(0, 0, width, height))
 	b := make([]byte, 4)
-	z := []byte{0, 0, 0, 0}
+	z := [4]byte{}
 Loop:
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
