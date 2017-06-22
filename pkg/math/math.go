@@ -62,7 +62,7 @@ func Squarest(n int) (int, int) {
 }
 
 // NiceSquarest finds the two closest numbers that multiply
-// to n and differ by less than one order of magnutude.
+// to n and differ by less than one order of magnitude.
 func NiceSquarest(n int) (int, int) {
 	if n <= 0 {
 		return 0, 0
