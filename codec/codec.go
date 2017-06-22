@@ -16,37 +16,38 @@ import (
 	fileckrmath "github.com/squat/fileckr/pkg/math"
 )
 
-// EncodeFile converts a file to a PNG and writes the bytes to the given Writer.
-func EncodeFile(file string, w io.Writer) error {
-	f, err := os.Open(file)
+// EncodeFile converts the named file to a PNG and writes the bytes to the given Writer.
+func EncodeFile(name string, w io.Writer) error {
+	f, err := os.Open(name)
 	if err != nil {
 		return fmt.Errorf("failed to open file: %v", err)
 	}
 	defer f.Close()
-	fi, err := f.Stat()
+	s, err := f.Stat()
 	if err != nil {
 		return fmt.Errorf("failed to stat file: %v", err)
 	}
-	s := fi.Size()
-	return Encode(bufio.NewReader(f), uint64(s), w)
+	return Encode(bufio.NewReader(f), uint64(s.Size()), s.Mode(), w)
 }
 
-// DecodeFile converts a PNG to a file and writes the bytes to the given Writer.
-func DecodeFile(file string, w io.Writer) error {
-	f, err := os.Open(file)
+// DecodeFile converts the named PNG to a file and writes the bytes to the given Writer.
+func DecodeFile(name string, w io.Writer) (os.FileMode, error) {
+	f, err := os.Open(name)
 	if err != nil {
-		return fmt.Errorf("failed to open file: %v", err)
+		return 0, fmt.Errorf("failed to open file: %v", err)
 	}
 	return Decode(bufio.NewReader(f), w)
 }
 
 // Encode converts a file to a PNG and writes the bytes to the given Writer.
-func Encode(r io.Reader, size uint64, w io.Writer) error {
-	lenBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(lenBytes, size)
-	r = io.MultiReader(bytes.NewReader(lenBytes), r)
+func Encode(r io.Reader, size uint64, mode os.FileMode, w io.Writer) error {
+	sizeBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(sizeBytes, size)
+	modeBytes := make([]byte, 4)
+	binary.LittleEndian.PutUint32(modeBytes, uint32(mode))
+	r = io.MultiReader(bytes.NewReader(sizeBytes), bytes.NewReader(modeBytes), r)
 
-	width, height := fileckrmath.NiceSquarest(int(math.Ceil(float64(size+8) / 4)))
+	width, height := fileckrmath.NiceSquarest(int(math.Ceil(float64(size+8+4) / 4)))
 	img := image.NewNRGBA(image.Rect(0, 0, width, height))
 	b := make([]byte, 4)
 	z := [4]byte{}
@@ -78,45 +79,49 @@ Loop:
 }
 
 // Decode converts a PNG to a file and writes the bytes to the given Writer.
-func Decode(r io.Reader, w io.Writer) error {
+func Decode(r io.Reader, w io.Writer) (os.FileMode, error) {
+	var mode os.FileMode
 	img, err := png.Decode(r)
 	if err != nil {
-		return fmt.Errorf("failed to decode png: %v", err)
+		return mode, fmt.Errorf("failed to decode png: %v", err)
 	}
 
-	var nb []uint8
-	var n uint64
-	buf := make([]byte, 4)
+	var sizeBytes []uint8
+	var size uint64
+	var setMode bool
+	b := make([]byte, 4)
 	width := img.Bounds().Max.X
 	height := img.Bounds().Max.Y
+	var n uint64
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			im := img.At(x, y).(color.NRGBA)
-			buf = []byte{im.R, im.G, im.B, im.A}
-			if len(nb) < 8 {
-				nb = append(nb, buf...)
-				if len(nb) == 8 {
-					n = binary.LittleEndian.Uint64(nb)
+			b = []byte{im.R, im.G, im.B, im.A}
+			if len(sizeBytes) < 8 {
+				sizeBytes = append(sizeBytes, b...)
+				if len(sizeBytes) == 8 {
+					size = binary.LittleEndian.Uint64(sizeBytes)
 				}
+				continue
+			} else if !setMode {
+				mode = os.FileMode(binary.LittleEndian.Uint32(b))
+				setMode = true
 			} else {
-				if n < 4 {
-					_, err = w.Write(buf[:n])
-					if err != nil {
-						return fmt.Errorf("failed to write final data: %v", err)
-					}
-					return nil
+				if size < 4 {
+					n = size
+				} else {
+					n = 4
 				}
-				_, err = w.Write(buf)
+				_, err = w.Write(b[:n])
 				if err != nil {
-					return fmt.Errorf("failed to write data: %v", err)
+					return mode, fmt.Errorf("failed to write data: %v", err)
 				}
-				n -= 4
+				size -= n
 			}
-			// Special case: if file length is zero, return.
-			if len(nb) == 8 && n == 0 {
-				return nil
+			if len(sizeBytes) == 8 && size == 0 {
+				return mode, nil
 			}
 		}
 	}
-	return errors.New("failed to read all image data")
+	return mode, errors.New("failed to read all image data")
 }

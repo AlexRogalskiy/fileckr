@@ -8,35 +8,67 @@ import (
 )
 
 func TestCodec(t *testing.T) {
-	cases := [][]byte{
-		[]byte(""),
-		[]byte("1"),
-		[]byte("foobarbaz"),
-		[]byte("lorempsum"),
+	type testCase struct {
+		data []byte
+		mode os.FileMode
+	}
+	cases := []testCase{
+		{
+			data: []byte(""),
+			mode: 0600,
+		},
+		{
+			data: []byte("1"),
+			mode: 0777,
+		},
+		{
+			data: []byte("foobarbaz"),
+			mode: 0555,
+		},
+		{
+			data: []byte("lorempsum"),
+			mode: 0644,
+		},
 	}
 
 	for i, c := range cases {
 		img := new(bytes.Buffer)
 		out := new(bytes.Buffer)
-		err := Encode(bytes.NewBuffer(c), uint64(len(c)), img)
+		err := Encode(bytes.NewBuffer(c.data), uint64(len(c.data)), c.mode, img)
 		if err != nil {
 			t.Errorf("test case %d: expected no error while encoding, got: %v", i, err)
 		}
-		err = Decode(img, out)
+		mode, err := Decode(img, out)
 		if err != nil {
 			t.Errorf("test case %d: expected no error while decoding, got: %v", i, err)
 		}
-		if bytes.Compare(c, out.Bytes()) != 0 {
+		if bytes.Compare(c.data, out.Bytes()) != 0 {
 			t.Errorf("test case %d: expected %v, got: %v", i, c, out.Bytes())
+		}
+		if mode != c.mode {
+			t.Errorf("test case %d: expected mode to be %o, got: %o", i, c.mode, mode)
 		}
 	}
 }
 
 func TestCodecFile(t *testing.T) {
-	cases := [][]byte{
-		[]byte("temporary file's content"),
-		[]byte("1"),
-		[]byte(""),
+	type testCase struct {
+		data []byte
+		mode os.FileMode
+	}
+	cases := []testCase{
+		{
+			data: []byte("temporary file's content"),
+			mode: 0600,
+		},
+		{
+			data: []byte("1"),
+			mode: 0777,
+		},
+		{
+			data: []byte(""),
+			mode: 0555,
+		},
 	}
 
 	for i, c := range cases {
@@ -45,8 +77,12 @@ func TestCodecFile(t *testing.T) {
 		if err != nil {
 			t.Errorf("test case %d: failed to create temporary file: %v", i, err)
 		}
+		err = os.Chmod(f.Name(), c.mode)
+		if err != nil {
+			t.Errorf("test case %d: failed to chmod temporary file: %v", i, err)
+		}
 		defer os.Remove(f.Name())
-		if _, err = f.Write(c); err != nil {
+		if _, err = f.Write(c.data); err != nil {
 			t.Errorf("test case %d: failed to write to temporary file: %v", i, err)
 		}
 		if err = f.Close(); err != nil {
@@ -64,12 +100,15 @@ func TestCodecFile(t *testing.T) {
 		if err = p.Close(); err != nil {
 			t.Errorf("test case %d: failed to close temporary PNG: %v", i, err)
 		}
-		err = DecodeFile(p.Name(), out)
+		mode, err := DecodeFile(p.Name(), out)
 		if err != nil {
 			t.Errorf("test case %d: expected no error while decoding, got: %v", i, err)
 		}
-		if bytes.Compare(c, out.Bytes()) != 0 {
+		if bytes.Compare(c.data, out.Bytes()) != 0 {
 			t.Errorf("test case %d: expected %v, got: %v", i, c, out.Bytes())
+		}
+		if mode != c.mode {
+			t.Errorf("test case %d: expected mode to be %o, got: %o", i, c.mode, mode)
 		}
 	}
 }

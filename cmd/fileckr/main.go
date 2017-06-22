@@ -23,11 +23,15 @@ func main() {
 				log.Fatal(err)
 			}
 			w := bufio.NewWriter(f)
-			err = codec.DecodeFile(args[0], w)
+			mode, err := codec.DecodeFile(args[0], w)
 			if err != nil {
 				log.Fatal(err)
 			}
 			err = w.Flush()
+			if err != nil {
+				log.Fatal(err)
+			}
+			err = os.Chmod(args[1], mode)
 			if err != nil {
 				log.Fatal(err)
 			}
