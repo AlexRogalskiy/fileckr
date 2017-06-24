@@ -13,7 +13,7 @@ import (
 	"math"
 	"os"
 
-	fileckrmath "github.com/squat/fileckr/pkg/math"
+	fileckrmath "github.com/squat/fileckr/math"
 )
 
 // EncodeFile converts the named file to a PNG and writes the bytes to the given Writer.
