@@ -92,6 +92,10 @@ func TestSquarest(t *testing.T) {
 			factors: [2]int{1, 13},
 		},
 		{
+			i:       24,
+			factors: [2]int{4, 6},
+		},
+		{
 			i:       27,
 			factors: [2]int{3, 9},
 		},

@@ -57,7 +57,12 @@ func Squarest(n int) (int, int) {
 		}
 		candidates = append(candidates, newCandidates...)
 	}
-	c := candidates[len(candidates)-1]
+	var c int
+	for i := range candidates {
+		if candidates[i] > c {
+			c = candidates[i]
+		}
+	}
 	return c, n / c
 }
 
